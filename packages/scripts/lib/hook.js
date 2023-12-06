@@ -1,29 +1,19 @@
 const xrpl = require("xrpl");
+const { Base } = require("./base");
 
-class Hook {
-
-    client
+class Hook extends Base {
 
     constructor(url) {
-        this.client = new xrpl.Client(url)
+        super(url);
     }
 
-    connect = async () => {
-        await this.client.connect()
-    }
-
-    secretToAddress = (secret) => {
-        const wallet = xrpl.Wallet.fromSeed(secret)
-        return wallet.address
-    }
-
-    process = async (sender, amount, recipient) => {
+    send = async (sender, amount, recipient) => {
         const wallet = xrpl.Wallet.fromSeed(sender)
 
         const json = {
             Account: wallet.address,
             TransactionType: "Payment",
-            Amount: "" + amount,
+            Amount: "" + BigInt(amount) * 1000000n,
             Destination: recipient,
             Fee: "100000"
         }
@@ -33,10 +23,6 @@ class Hook {
         })
 
         return response
-    }
-
-    disconnect = () => {
-        this.client.disconnect()
     }
 
 }
