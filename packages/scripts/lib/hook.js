@@ -1,6 +1,6 @@
 const xrpl = require("xrpl");
 
-class Starter {
+class Hook {
 
     client
 
@@ -41,4 +41,4 @@ class Starter {
 
 }
 
-exports.Starter = Starter
+exports.Hook = Hook

@@ -1,7 +1,7 @@
 {
-  "name": "hooks",
+  "name": "scripts",
   "version": "0.0.0",
-  "description": "> TODO: description",
+  "description": "sctipts to testout core xrpl.js functions",
   "author": "pisuthd <pisuth.dae@gmail.com>",
   "homepage": "https://github.com/tamago-labs/legato-pay#readme",
   "license": "MIT",
