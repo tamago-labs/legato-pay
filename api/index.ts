@@ -2,7 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 
-import { getMerchants, addWallet } from "./routes"
+import { getMerchants, addWallet, addClaim, getClaim } from "./routes"
 
 const legatoPayTable = new aws.dynamodb.Table(
     "legatoPayTable",
@@ -23,6 +23,25 @@ const legatoPayTable = new aws.dynamodb.Table(
     }
 )
 
+const legatoClaimTable = new aws.dynamodb.Table(
+    "legatoClaimTable",
+    {
+        attributes: [
+            {
+                name: "chain",
+                type: "S"
+            },
+            {
+                name: "channelId",
+                type: "S"
+            }
+        ],
+        hashKey: "chain",
+        rangeKey: "channelId",
+        billingMode: "PAY_PER_REQUEST"
+    }
+)
+
 const endpoint = new awsx.classic.apigateway.API("legatopay-api", {
     routes: [
         {
@@ -39,7 +58,22 @@ const endpoint = new awsx.classic.apigateway.API("legatopay-api", {
                 memorySize: 256,
                 callback: async (event) => await addWallet(event, legatoPayTable.name.get()),
             })
-        }
+        },
+        {
+            method: "POST",
+            path: "/claim",
+            eventHandler: new aws.lambda.CallbackFunction("addClaim", {
+                memorySize: 256,
+                callback: async (event) => await addClaim(event, legatoClaimTable.name.get()),
+            })
+        },
+        {
+            method: "GET",
+            path: "/claim/{proxy+}",
+            eventHandler: new aws.lambda.CallbackFunction("getClaim", {
+                callback: async (event) => await getClaim(event, legatoClaimTable.name.get())
+            })
+        },
     ]
 })
 
