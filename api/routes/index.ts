@@ -236,7 +236,7 @@ export const addClaim = async (event: any, tableName: any) => {
 
         if (!Item) {
 
-            const { signature, amount } = body
+            const { signature, amount, sum } = body
 
             const payload = {
                 "TableName": tableName,
@@ -251,6 +251,7 @@ export const addClaim = async (event: any, tableName: any) => {
                         "S": JSON.stringify([{
                             signature,
                             amount,
+                            sum,
                             timestamp: new Date().valueOf()
                         }
                         ])
@@ -263,13 +264,14 @@ export const addClaim = async (event: any, tableName: any) => {
 
         } else {
 
-            const { signature, amount } = body
+            const { signature, amount, sum } = body
 
             const existData = JSON.parse(Item.claims.S || JSON.stringify([]))
 
             const newData = [{
                 signature,
                 amount,
+                sum,
                 timestamp: new Date().valueOf()
             }].concat(existData)
 
@@ -290,7 +292,6 @@ export const addClaim = async (event: any, tableName: any) => {
 
             const command = new PutItemCommand(payload);
             await client.send(command);
-
         }
 
         return {
