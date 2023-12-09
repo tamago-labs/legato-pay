@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react"
-import { Client, Wallet } from "xrpl"
+import { Client, Wallet, authorizeChannel } from "xrpl"
 
 import { ACCOUNTS, SERVER_URL, API_URL } from "../constants"
 
@@ -23,7 +23,7 @@ const Provider = ({ children }) => {
     const { account, balance, merchant } = values
 
     const updateAccount = (account) => {
-        dispatch({ account })
+        dispatch({ account, merchant : undefined })
     }
 
     useEffect(() => {
@@ -52,6 +52,11 @@ const Provider = ({ children }) => {
         return data.merchants.map(item => (JSON.parse(item.wallets.S))).reduce((arr, item) => {
             return arr.concat(item)
         }, [])
+    }
+
+    const getClaims = async (channelId) => {
+        const { data } = await axios.get(`${API_URL}/claim/${channelId}`)
+        return data.claims
     }
 
     const generateNewWallet = useCallback(async () => {
@@ -118,6 +123,31 @@ const Provider = ({ children }) => {
 
     }, [account, client])
 
+    const pay = useCallback(async (channelId, amount) => {
+
+        const { data } = await axios.get(`${API_URL}/claim/${channelId}`)
+        const { claims } = data
+
+        const paid = claims.reduce((output, item) => {
+            return output + Number(item.amount)
+        }, 0)
+
+        const { secret } = account
+        const wallet = Wallet.fromSeed(secret)
+        const signature = authorizeChannel(wallet, channelId, "" + BigInt(amount + paid) * 1000000n)
+
+        console.log("signature : ", signature)
+
+        await axios.post(`/api/claim`, {
+            chain: "testnet",
+            channelId,
+            signature,
+            amount,
+            sum: amount + paid
+        })
+
+    }, [account])
+
     const listChannels = useCallback(async (destination) => {
 
         if (!client.isConnected()) {
@@ -181,7 +211,9 @@ const Provider = ({ children }) => {
             listAllMerchants,
             openChannel,
             listChannels,
-            setMerchant
+            setMerchant,
+            pay,
+            getClaims
         }),
         [
             account,
@@ -192,7 +224,8 @@ const Provider = ({ children }) => {
             listMerchants,
             merchant,
             openChannel,
-            listChannels
+            listChannels,
+            pay
         ]
     )
 

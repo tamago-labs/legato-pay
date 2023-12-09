@@ -43,7 +43,7 @@ const WalletItem = (item) => {
                     </div>
                 </div>
                 <div className="w-full mb-1 text-xs text-center text-black ">
-                    <SmallBadge value={channels.length !== 0 ? <>{`${(Number(channels[0].amount) / 1000000).toLocaleString()} `}XRP</> : "Closed"} />
+                    <SmallBadge value={channels.length !== 0 ? <>{`${(Number(channels[channels.length-1].amount) / 1000000).toLocaleString()} `}XRP</> : "Closed"} />
                 </div>
             </div>
         </>
@@ -107,13 +107,17 @@ const ChooseWallet = ({
 
         setMerchant(selected)
         close()
+        setSelected()
 
     }, [selected])
 
     return (
         <BaseModal
             visible={visible}
-            close={close}
+            close={() => {
+                close()
+                setSelected()
+            }}
             title={"Choose Merchant"}
         >
 
