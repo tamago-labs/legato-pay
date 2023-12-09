@@ -10,7 +10,7 @@ import PayProvider from "../../hooks/usePay"
 
 const MainPanel = () => {
 
-    const [tab, setTab] = useState(1)
+    const [tab, setTab] = useState(0)
 
     return (
         <PayProvider>

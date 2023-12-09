@@ -15,11 +15,12 @@ const Provider = ({ children }) => {
         (curVal, newVal) => ({ ...curVal, ...newVal }),
         {
             account: ACCOUNTS[0],
-            balance: 0
+            balance: 0,
+            merchant: undefined
         }
     )
 
-    const { account, balance } = values
+    const { account, balance, merchant } = values
 
     const updateAccount = (account) => {
         dispatch({ account })
@@ -42,9 +43,16 @@ const Provider = ({ children }) => {
     const listMerchants = useCallback(async () => {
         const { address } = account
         const { data } = await axios.get(`${API_URL}/merchants`)
-        const filtered = data.merchants.filter(item => item.account.S === address) 
+        const filtered = data.merchants.filter(item => item.account.S === address)
         return filtered.length > 0 ? JSON.parse(filtered[0].wallets.S) : []
     }, [account])
+
+    const listAllMerchants = async () => {
+        const { data } = await axios.get(`${API_URL}/merchants`)
+        return data.merchants.map(item => (JSON.parse(item.wallets.S))).reduce((arr, item) => {
+            return arr.concat(item)
+        }, [])
+    }
 
     const generateNewWallet = useCallback(async () => {
         // if (!client.isConnected()) {
@@ -85,6 +93,50 @@ const Provider = ({ children }) => {
 
     }, [client])
 
+    const openChannel = useCallback(async (amount, Destination) => {
+
+        if (!client.isConnected()) {
+            await client.connect()
+        }
+
+        const { secret } = account
+
+        const wallet = Wallet.fromSeed(secret)
+
+        const json = {
+            Account: wallet.address,
+            Amount: "" + BigInt(amount) * 1000000n,
+            Destination,
+            PublicKey: wallet.publicKey,
+            SettleDelay: 0,
+            TransactionType: "PaymentChannelCreate"
+        }
+
+        await client.submitAndWait(json, {
+            wallet
+        })
+
+    }, [account, client])
+
+    const listChannels = useCallback(async (destination) => {
+
+        if (!client.isConnected()) {
+            await client.connect()
+        }
+
+        const { address } = account
+
+        const param = {
+            account: address,
+            destination_account: destination,
+            command: "account_channels"
+        }
+
+        const { result } = await client.request(param)
+        return result.channels
+
+    }, [client, account])
+
     const sendToApi = useCallback(async ({
         merchantName,
         merchantAddress,
@@ -111,6 +163,10 @@ const Provider = ({ children }) => {
         return data.status === "ok"
     }, [account])
 
+    const setMerchant = (merchant) => {
+        dispatch({ merchant })
+    }
+
     const payContext = useMemo(
         () => ({
             account,
@@ -120,7 +176,12 @@ const Provider = ({ children }) => {
             generateNewWallet,
             setupMultisig,
             sendToApi,
-            listMerchants
+            listMerchants,
+            merchant,
+            listAllMerchants,
+            openChannel,
+            listChannels,
+            setMerchant
         }),
         [
             account,
@@ -128,7 +189,10 @@ const Provider = ({ children }) => {
             generateNewWallet,
             setupMultisig,
             sendToApi,
-            listMerchants
+            listMerchants,
+            merchant,
+            openChannel,
+            listChannels
         ]
     )
 

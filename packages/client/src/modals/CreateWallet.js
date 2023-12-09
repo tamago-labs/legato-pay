@@ -59,7 +59,7 @@ const CreateWallet = ({
 
             const { classicAddress } = newWallet
  
-            console.log("generated : ", classicAddress)
+            console.log("generated : ", newWallet)
 
             await setupMultisig(newWallet)
 
